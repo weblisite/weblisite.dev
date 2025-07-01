@@ -1,94 +1,75 @@
+import { z } from "zod";
+
+// User interface (matching the structure that MemStorage expects)
 export interface User {
-  id: string; // UUID
+  id: string; // UUID for Supabase compatibility
   username: string;
-  email: string;
-  plan: 'free' | 'pro' | 'team';
-  stripe_customer_id?: string;
-  created_at: string;
-  updated_at: string;
+  password: string;
+  email: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
 }
 
+// Project interface
 export interface Project {
   id: number;
-  user_id: string; // UUID foreign key
+  user_id: string; // UUID reference for Supabase compatibility
   name: string;
-  description?: string;
   created_at: string;
   updated_at: string;
-  deployed_url?: string;
-  deployment_status?: 'pending' | 'building' | 'deployed' | 'failed';
 }
 
-export interface ProjectFile {
+// File interface
+export interface File {
   id: number;
   project_id: number;
   path: string;
   content: string;
-  created_at: string;
   updated_at: string;
 }
 
-export interface ProjectDeployment {
+// Deployment interface
+export interface Deployment {
   id: number;
   project_id: number;
-  deployment_url: string;
-  status: 'pending' | 'building' | 'deployed' | 'failed';
+  url: string;
   created_at: string;
-  updated_at: string;
-  build_logs?: string;
+  status: string;
 }
 
-export interface ProjectConfig {
-  id: number;
-  project_id: number;
-  framework: string;
-  build_command?: string;
-  output_directory?: string;
-  environment_variables?: Record<string, string>;
-  created_at: string;
-  updated_at: string;
-}
+// Schema for Supabase config
+export const supabaseConfigSchema = z.object({
+  url: z.string().url(),
+  key: z.string().min(1),
+});
 
-// Zod schemas for validation
-import { z } from 'zod';
-
+// Insert schemas using Zod (replacing Drizzle createInsertSchema)
 export const insertUserSchema = z.object({
-  username: z.string().min(1).max(50),
-  email: z.string().email(),
-  plan: z.enum(['free', 'pro', 'team']).default('free'),
-  stripe_customer_id: z.string().optional(),
+  username: z.string(),
+  password: z.string(),
+  email: z.string().optional(),
 });
 
 export const insertProjectSchema = z.object({
-  user_id: z.string().uuid(), // UUID validation
-  name: z.string().min(1).max(100),
-  description: z.string().max(500).optional(),
+  user_id: z.string(), // UUID for Supabase compatibility
+  name: z.string(),
 });
 
-export const insertProjectFileSchema = z.object({
-  project_id: z.number().positive(),
-  path: z.string().min(1),
+export const insertFileSchema = z.object({
+  project_id: z.number(),
+  path: z.string(),
   content: z.string(),
 });
 
-export const insertProjectDeploymentSchema = z.object({
-  project_id: z.number().positive(),
-  deployment_url: z.string().url(),
-  status: z.enum(['pending', 'building', 'deployed', 'failed']),
-  build_logs: z.string().optional(),
+export const insertDeploymentSchema = z.object({
+  project_id: z.number(),
+  url: z.string(),
+  status: z.string(),
 });
 
-export const insertProjectConfigSchema = z.object({
-  project_id: z.number().positive(),
-  framework: z.string().min(1),
-  build_command: z.string().optional(),
-  output_directory: z.string().optional(),
-  environment_variables: z.record(z.string()).optional(),
-});
-
-// Export types for the schemas
+// Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
-export type InsertProjectFile = z.infer<typeof insertProjectFileSchema>;
-export type InsertProjectDeployment = z.infer<typeof insertProjectDeploymentSchema>;
-export type InsertProjectConfig = z.infer<typeof insertProjectConfigSchema>;
+export type InsertFile = z.infer<typeof insertFileSchema>;
+export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
+export type SupabaseConfig = z.infer<typeof supabaseConfigSchema>;
